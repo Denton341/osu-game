@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-ogp-key" content="fa29b0ef-94e6-4a82-b20f-08336b32c6c8" />
+  <title>osu! - Rhythm Game</title>
+  <script src="https://sdk.play.fun"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @font-face {
+      font-family: 'GameFont';
+      src: local('Arial');
+    }
+
+    body {
+      background: #1a1a2e;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      cursor: none;
+      user-select: none;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    #gameCanvas {
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
+    }
+
+    #cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+      transition: transform 0.05s;
+    }
+
+    #cursor.clicking {
+      transform: translate(-50%, -50%) scale(0.7);
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Menu styles */
+    #menu {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+
+    #menu h1 {
+      font-size: 120px;
+      color: #ff69b4;
+      text-shadow: 0 0 30px rgba(255, 105, 180, 0.6), 0 0 60px rgba(255, 105, 180, 0.3);
+      margin-bottom: 10px;
+      letter-spacing: 8px;
+      font-weight: 900;
+    }
+
+    #menu .subtitle {
+      color: #aaa;
+      font-size: 18px;
+      margin-bottom: 50px;
+      letter-spacing: 4px;
+    }
+
+    .song-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .song-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 105, 180, 0.3);
+      color: #fff;
+      padding: 18px 50px;
+      font-size: 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 350px;
+      text-align: left;
+    }
+
+    .song-btn:hover {
+      background: rgba(255, 105, 180, 0.15);
+      border-color: #ff69b4;
+      transform: translateX(10px);
+      box-shadow: 0 0 20px rgba(255, 105, 180, 0.2);
+    }
+
+    .song-btn .difficulty {
+      font-size: 12px;
+      color: #ff69b4;
+      margin-top: 4px;
+    }
+
+    .song-btn .bpm {
+      font-size: 12px;
+      color: #888;
+      float: right;
+      margin-top: -20px;
+    }
+
+    #instructions {
+      color: #666;
+      font-size: 13px;
+      margin-top: 20px;
+    }
+
+    /* Results screen */
+    #results {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+
+    #results h2 {
+      font-size: 60px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 20px;
+    }
+
+    .result-grade { font-size: 120px; margin-bottom: 20px; }
+
+    .result-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px 40px;
+      margin-bottom: 40px;
+    }
+
+    .stat {
+      color: #fff;
+      font-size: 20px;
+    }
+
+    .stat-label { color: #888; font-size: 14px; }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    #retryBtn, #menuBtn {
+      background: rgba(255, 105, 180, 0.2);
+      border: 2px solid #ff69b4;
+      color: #fff;
+      padding: 15px 40px;
+      font-size: 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      transition: all 0.2s;
+    }
+
+    #retryBtn:hover, #menuBtn:hover {
+      background: rgba(255, 105, 180, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="cursor"></div>
+
+  <!-- Main Menu -->
+  <div id="menu">
+    <h1>osu!</h1>
+    <div class="subtitle">RHYTHM IS JUST A CLICK AWAY</div>
+    <div class="song-list" id="songList"></div>
+    <div id="instructions">Click circles to the beat &bull; Follow sliders &bull; Spin spinners &bull; Press ESC to quit</div>
+  </div>
+
+  <!-- Results Screen -->
+  <div id="results">
+    <h2 id="resultTitle">Results</h2>
+    <div class="result-grade" id="resultGrade"></div>
+    <div class="result-stats">
+      <div class="stat">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="resultScore">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Max Combo</div>
+        <div class="stat-value" id="resultCombo">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Accuracy</div>
+        <div class="stat-value" id="resultAccuracy">0%</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Perfect</div>
+        <div class="stat-value" id="resultPerfect" style="color:#46b8ff">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Great</div>
+        <div class="stat-value" id="resultGreat" style="color:#5eff7e">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Good</div>
+        <div class="stat-value" id="resultGood" style="color:#ffde5e">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Miss</div>
+        <div class="stat-value" id="resultMiss" style="color:#ff5e5e">0</div>
+      </div>
+    </div>
+    <div>
+      <button id="retryBtn">Retry</button>
+      <button id="menuBtn">Back to Menu</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
