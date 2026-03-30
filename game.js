@@ -9,7 +9,7 @@
   let paused = false;
   let safeTop = 0;
   let safeBottom = 0;
-  const GAME_ID = 'PLACEHOLDER'; // Will be replaced after registration
+  const GAME_ID = '29760dc3-70fa-470b-bd92-203259f20747';
 
   if (typeof OpenGameSDK !== 'undefined') {
     pfSdk = new OpenGameSDK({
